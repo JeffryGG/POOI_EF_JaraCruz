@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProyBackEnd", "ProyBackEnd\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CapaEntidad", "CapaEntidad\CapaEntidad.csproj", "{6C111DDE-C562-42FA-B72C-E95F5E183DFE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProyFrontEnd", "ProyFrontEnd\ProyFrontEnd.csproj", "{9C023B75-B912-4CAE-AA78-9036527324A5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProyFrontEnd", "ProyFrontEnd\ProyFrontEnd.csproj", "{9C023B75-B912-4CAE-AA78-9036527324A5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
