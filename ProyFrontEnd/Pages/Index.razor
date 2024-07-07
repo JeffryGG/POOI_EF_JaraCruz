@@ -1,0 +1,120 @@
+﻿@page "/"
+@using CapaEntidad
+@inject IJSRuntime js
+@using Newtonsoft.Json
+@using ProyFrontEnd.Data
+@using RestSharp
+@using ProyFrontEnd.Component
+
+@code
+{
+    List<AlumnoEnt> objListaAlumno = new List<AlumnoEnt>();
+    int Idalumno = 0;
+    bool inicializar = false;
+    string Titulo = "";
+
+
+    protected override void OnInitialized()
+    {
+        ListarAlumno();
+        base.OnInitialized();
+    }
+
+    void ListarAlumno()
+    {
+        try
+        {
+            var _client = new RestClient(MetaGlobal.RutaApi + "Alumno/ListarAlumno?orden=1&idventa=0");
+            var _request = new RestRequest();
+            _request.Method = Method.Get;
+            var _response = _client.Execute(_request);
+            if (_response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+
+                objListaAlumno = new List<AlumnoEnt>();
+            }
+            else
+            {
+                objListaAlumno = JsonConvert.DeserializeObject<List<AlumnoEnt>>(_response.Content);
+
+            }
+        }
+        catch (Exception ex)
+        {
+            objListaAlumno = new List<AlumnoEnt>();
+        }
+    }
+
+    void nuevoregistro()
+    {
+        Titulo = "Nueva Alumno";
+        Idalumno = 0;
+        inicializar = true;
+        js.InvokeVoidAsync("ShowMessageModal", "MsjNuevoRegistro");
+    }
+
+    void Editarregistro(int _Idalumno)
+    {
+        Titulo = "Editar Alumno Cod: " + _Idalumno.ToString();
+        Idalumno = _Idalumno;
+        inicializar = true;
+        js.InvokeVoidAsync("ShowMessageModal", "MsjNuevoRegistro");
+    }
+
+
+
+}
+
+<button class="btn btn-primary" @onclick="nuevoregistro">Nuevo Registro</button>
+
+<div class="row mt-3">
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <td>ID</td>
+                <td>Alumno</td>
+                <td>Ciclo</td>
+                <td>Carrera</td>
+                <td>Opcion</td>
+            </tr>
+        </thead>
+        <tbody>
+            @if (objListaAlumno.Count() > 0)
+            {
+                @foreach (var item in objListaAlumno)
+                {
+                    <tr>
+                        <td> @item.IdAlumno</td>
+                        <td> @item.Nombres @item.Apellidos</td>
+                        <td> @item.Ciclo</td>
+                        <td> @item.Carrera</td>
+                        <td><button class="btn btn-primary" @onclick="(()=>Editarregistro(item.IdAlumno))">Editar</button></td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+
+<div class="modal" id="MsjNuevoRegistro" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" style="max-width: 95%;  margin: 10px auto;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>@Titulo</h4>
+                <button type="button" id="idCloseModal" style="border: 4px solid #8b0000;border-radius: 20px;" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <RegistrarAlumnoComponent
+                    Idalumno="@Idalumno"
+                    inicializar="@inicializar"
+                    ></RegistrarAlumnoComponent>
+                </div>
+            </div>
+            <div class="modal-footer text-center modal-footer-message">
+            </div>
+        </div>
+    </div>
+</div>
+

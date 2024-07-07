@@ -1,0 +1,292 @@
+﻿@using CapaEntidad
+@inject IJSRuntime js
+@using Newtonsoft.Json
+@using ProyFrontEnd.Data
+@using RestSharp
+
+
+@code{
+    [Parameter]
+    public int Idalumno { get; set; }
+    [Parameter]
+    public bool inicializar { get; set; }
+    public string mensaje = "";
+
+    bool verificar = false;
+
+    AlumnoEnt objalumno = new AlumnoEnt();
+    AlmunoCursoEnt objalumnocurso = new AlmunoCursoEnt();
+
+
+
+    List<CursoEnt> listarcurso = new List<CursoEnt>();
+    CursoEnt objcurso = new CursoEnt();
+
+    protected override void OnInitialized()
+    {
+        objalumno = new AlumnoEnt();
+        objalumno.ListaCurso = new List<AlmunoCursoEnt>();
+        objalumnocurso = new AlmunoCursoEnt();
+        base.OnInitialized();
+    }
+    protected override void OnParametersSet()
+    {
+        objalumno = new AlumnoEnt();
+        objalumno.ListaCurso = new List<AlmunoCursoEnt>();
+        objalumnocurso = new AlmunoCursoEnt();
+
+
+        if (inicializar)
+        {
+            ListaDoCurso();
+            if (Idalumno > 0) //Editar venta
+            {
+
+                BuscarAlumno();
+            }
+
+            base.OnParametersSet();
+        }
+    }
+
+    void ListaDoCurso()
+    {
+        var data = MetaGlobal.RutaApi;
+        var _client = new RestClient(MetaGlobal.RutaApi + "Curso/ListarCurso");
+        var _request = new RestRequest();
+        _request.Method = Method.Get;
+        var _response = _client.Execute(_request);
+
+        if (_response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            listarcurso = new List<CursoEnt>() ;
+        }
+        else
+        {
+            listarcurso = JsonConvert.DeserializeObject<List<CursoEnt>>(_response.Content);
+            objcurso.IdCurso = listarcurso.Take(1).Select(s => s.IdCurso).FirstOrDefault();
+
+        }
+    }
+
+    void BuscarAlumno()
+    {
+        try
+        {
+            var _client = new RestClient(MetaGlobal.RutaApi + "Alumno/ListarAlumno_XID?orden=2&idalumno=" + Idalumno.ToString());
+            var _request = new RestRequest();
+            _request.Method = Method.Get;
+            var _response = _client.Execute(_request);
+            if (_response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                objalumno = new AlumnoEnt();
+            }
+            else
+            {
+                objalumno = JsonConvert.DeserializeObject<AlumnoEnt>(_response.Content);
+
+
+            }
+
+        }
+        catch (Exception ex)
+        {
+            mensaje = ex.Message;
+            js.InvokeVoidAsync("ShowMessageModal", "MsjResultado");
+
+
+        }
+    }
+
+    void EditarProductoItem(AlmunoCursoEnt _ventaitem)
+    {
+        objalumnocurso = _ventaitem;
+
+    }
+
+    void AgregarAlumno()
+    {
+        if (objalumnocurso.IdAlumnoCurso > 0) //editar
+        {
+            var editar = objalumno.ListaCurso.Where(w => w.IdAlumnoCurso == objalumnocurso.IdAlumnoCurso).FirstOrDefault();
+
+
+            objalumnocurso = new AlmunoCursoEnt();
+
+        }
+        else //registrar
+        {
+            objalumnocurso.IdCurso = objcurso.IdCurso;
+            objalumnocurso.Nota = objalumnocurso.Nota;
+
+            objalumno.ListaCurso.Add(objalumnocurso);
+
+            objalumnocurso = new AlmunoCursoEnt();
+        }
+    }
+
+    void EliminarItem(AlmunoCursoEnt item)
+    {
+        objalumno.ListaCurso.Remove(item);
+
+    }
+
+    async Task Registrar()
+    {
+        verificar = false;
+        try
+        {
+            objalumnocurso.IdCurso = objcurso.IdCurso;
+            objalumnocurso.Nota = objalumnocurso.Nota;
+
+
+            var Json = JsonConvert.SerializeObject(objalumno);
+
+            var _cliente = new RestClient(MetaGlobal.RutaApi + "Alumno/RegistrarAlumno");
+            var _request = new RestRequest();
+            _request.Method = Method.Post;
+            _request.AddJsonBody(Json);
+            var _response = _cliente.Execute(_request);
+
+            if (_response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                mensaje = _response.Content.ToString();
+                await js.InvokeVoidAsync("ShowMessageModal", "MsjResultado");
+               
+            }
+            else
+            {
+
+                mensaje = "Registro Correcto";
+                verificar = true;
+                await js.InvokeVoidAsync("ShowMessageModal", "MsjResultado");
+            }
+
+        }
+        catch (Exception ex)
+        {
+            mensaje = ex.Message;
+            await js.InvokeVoidAsync("ShowMessageModal", "MsjResultado");
+        }
+
+    }
+    void ActualizarPagina()
+    {
+        js.InvokeVoidAsync("Reload");
+    }
+
+}
+
+<div class="row mt-4">
+    <div class="col-md-2">
+        Nombre
+        <input type="text" class="form-control" @bind="objalumno.Nombres" />
+    </div>
+    <div class="col-md-3">
+        Apellido
+        <input type="text" class="form-control" @bind="objalumno.Apellidos" />
+    </div>
+    <div class="col-md-1">
+        Ciclo
+        <input type="text" class="form-control" @bind="objalumno.Ciclo" />
+    </div>
+    <div class="col-md-3">
+        Carrera
+        <input type="text" class="form-control" @bind="objalumno.Carrera" />
+    </div>
+    <div class="col-md-2 mt-3">
+        <button class="form-control btn-primary" @onclick="Registrar">Registrar</button>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-4">
+        Curso
+        <EditForm Model="objcurso">
+            <InputSelect class="form-select-lg form-control" @bind-Value="@objcurso.IdCurso">
+                @if (listarcurso.Count() > 0)
+                {
+                    @foreach (var item in listarcurso)
+                    {
+                        <option value="@item.IdCurso">@item.NombreCurso</option>
+                    }
+                }
+            </InputSelect>
+        </EditForm>
+    </div>
+    <div class="col-md-2">
+        Nota
+        <input type="text" class="form-control" @bind="objalumnocurso.Nota" />
+    </div>
+    <div class="col-md-2">
+        <button class="form-control btn-success mt-3" @onclick="AgregarAlumno">Agregar</button>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-12 table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Cod Curso</th>
+                    <th>Curso</th>
+                    <th>Nota</th>
+                    <th>Opcion</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (objalumno.ListaCurso.Count() > 0)
+                {
+                    @foreach (var item in objalumno.ListaCurso)
+                    {
+                        <tr>
+                            <td>@listarcurso.Where(w => w.IdCurso == item.IdCurso).Select(s => s.CodCurso).FirstOrDefault()</td>
+                            <td>@listarcurso.Where(w => w.IdCurso == item.IdCurso).Select(s => s.NombreCurso).FirstOrDefault()</td>
+                            <td>@item.Nota</td>
+                            <td>
+                                @if (item.IdAlumnoCurso == 0)
+                                {
+                                    <button class="btn btn-danger" @onclick="(()=>EliminarItem(item))">Eliminar</button>
+                                }
+                                @if (item.IdAlumnoCurso > 0)
+                                {
+                                    <button class="btn btn-success" @onclick="(()=>EditarProductoItem(item))">Editar</button>
+                                }
+                            </td>
+                        </tr>
+
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+<div class="modal" id="MsjResultado" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" style="max-width: 35%;  margin: 10px auto;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>Mensaje</h4>
+                @if(verificar == false)
+                {
+                    <button type="button" id="idCloseModal" style="border: 4px solid #8b0000;border-radius: 20px;" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                }
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    @mensaje
+                    <br />
+                    <br />
+                    @if (verificar == true)
+                    {
+                        <button class="btn btn-primary" @onclick="ActualizarPagina">Aceptar</button>
+                    }
+                </div>
+            </div>
+            <div class="modal-footer text-center modal-footer-message">
+            </div>
+        </div>
+    </div>
+</div>
